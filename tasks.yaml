@@ -1,0 +1,64 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: npm-task
+  labels:
+    app.kubernetes.io/version: "0.1"
+  annotations:
+    tekton.dev/pipelines.minVersion: "0.12.1"
+    tekton.dev/categories: "Build Tools"
+    tekton.dev/displayName: "npm build"
+    tekton.dev/description: "Task to run npm install and build steps"
+spec:
+  description: >-
+    This task runs npm commands for Node.js projects.
+  params:
+    - name: PATH
+      description: The path to the source code relative to the workspace.
+      type: string
+      default: "."
+  workspaces:
+    - name: source
+      description: A workspace that contains the fetched git repository.
+  steps:
+    - name: npm-install-and-build
+      image: node:18-alpine
+      workingDir: "$(workspaces.source.path)/$(params.PATH)"
+      script: |
+        #!/usr/bin/env sh
+        echo "Running npm install..."
+        npm install
+        echo "Running build/lint if available..."
+        npm run --silent build || echo "No build script found, skipping."
+
+---
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: jasmine-test-task
+  labels:
+    app.kubernetes.io/version: "0.1"
+  annotations:
+    tekton.dev/pipelines.minVersion: "0.12.1"
+    tekton.dev/categories: "Testing"
+    tekton.dev/displayName: "Jasmine Tests"
+    tekton.dev/description: "Task to run unit tests using Jasmine"
+spec:
+  description: >-
+    This task runs unit tests using npx jasmine framework.
+  params:
+    - name: PATH
+      description: The path to the source code relative to the workspace.
+      type: string
+      default: "."
+  workspaces:
+    - name: source
+      description: A workspace that contains the fetched git repository.
+  steps:
+    - name: run-jasmine-tests
+      image: node:18-alpine
+      workingDir: "$(workspaces.source.path)/$(params.PATH)"
+      script: |
+        #!/usr/bin/env sh
+        echo "Running Jasmine unit tests..."
+        npx jasmine
