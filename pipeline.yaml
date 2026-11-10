@@ -1,0 +1,39 @@
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: tax-calculator-pipeline
+spec:
+  description: |
+    Конвейер для сборки и тестирования приложения Node.js / Tax Calculator
+  workspaces:
+    - name: shared-workspace
+      description: Общее рабочее пространство для исходного кода проекта
+  params:
+    - name: repo-url
+      type: string
+      description: URL исходного репозитория Git
+  tasks:
+    - name: npminstall
+      taskRef:
+        name: npm-task
+      workspaces:
+        - name: source
+          workspace: shared-workspace
+
+    - name: tests
+      runAfter:
+        - npminstall
+      taskRef:
+        name: jasmine-test-task
+      workspaces:
+        - name: source
+          workspace: shared-workspace
+
+    - name: build
+      runAfter:
+        - tests
+      taskRef:
+        name: build-task
+      workspaces:
+        - name: source
+          workspace: shared-workspace
